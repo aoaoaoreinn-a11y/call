@@ -341,7 +341,7 @@ const RoomManager = (() => {
 
 
   /*
-   * ユーザーアイコン作成
+   * ユーザー要素作成（Meet風カード＆背景ビデオ＋前面アイコン構造）
    */
   function createUserElement(
     id,
@@ -356,6 +356,36 @@ const RoomManager = (() => {
     container.className =
       "user";
 
+    const isMe = (id === currentUserId);
+    const hasCamera = isMe ? cameraEnabled : (window.remoteCameraStatus && window.remoteCameraStatus[id]);
+
+    if (hasCamera) {
+      container.classList.add("camera-active");
+    }
+
+    // ビデオボックス（背景）
+    const videoBox = document.createElement("div");
+    videoBox.className = "video-box";
+    if (isMe) {
+      videoBox.id = "myVideoBox";
+    } else {
+      videoBox.id = "videoBox_" + id;
+    }
+
+    const video = document.createElement("video");
+    if (isMe) {
+      video.id = "myVideoElement";
+      video.muted = true;
+      if (localVideoStream) {
+        video.srcObject = localVideoStream;
+      }
+    }
+    video.autoplay = true;
+    video.playsInline = true;
+    videoBox.appendChild(video);
+    container.appendChild(videoBox);
+
+    // ユーザーアイコン（前面）
     const icon =
       document.createElement(
         "div"
@@ -364,7 +394,7 @@ const RoomManager = (() => {
     icon.className =
       "user-icon";
 
-    if (id === currentUserId) {
+    if (isMe) {
       icon.id = "myUserIcon";
       icon.style.setProperty("--user-color", user.color || "#5865f2");
     }
@@ -377,7 +407,9 @@ const RoomManager = (() => {
     if (user.color) {
       icon.style.background = user.color;
     }
+    container.appendChild(icon);
 
+    // ユーザー名（下部固定）
     const name =
       document.createElement(
         "div"
@@ -388,64 +420,6 @@ const RoomManager = (() => {
 
     name.textContent =
       user.name;
-
-    container.appendChild(icon);
-
-    if (id === currentUserId) {
-      const myVideoBox =
-        document.createElement(
-          "div"
-        );
-
-      myVideoBox.id =
-        "myVideoBox";
-
-      myVideoBox.className =
-        "video-box";
-
-      if (!cameraEnabled) {
-        myVideoBox.style.display =
-          "none";
-      }
-
-      const myVideo =
-        document.createElement(
-          "video"
-        );
-
-      myVideo.id =
-        "myVideoElement";
-
-      myVideo.autoplay = true;
-      myVideo.playsInline = true;
-      myVideo.muted = true;
-
-      if (localVideoStream) {
-        myVideo.srcObject =
-          localVideoStream;
-      }
-
-      myVideoBox.appendChild(myVideo);
-      container.appendChild(myVideoBox);
-    } else {
-      const remoteVideoBox =
-        document.createElement(
-          "div"
-        );
-
-      remoteVideoBox.id =
-        "videoBox_" + id;
-
-      remoteVideoBox.className =
-        "video-box";
-
-      remoteVideoBox.style.display =
-        "none";
-
-      container.appendChild(
-        remoteVideoBox
-      );
-    }
 
     container.appendChild(name);
 
@@ -560,9 +534,9 @@ const RoomManager = (() => {
           "myVideoBox"
         );
 
-      if (myBox) {
-        myBox.style.display =
-          "none";
+      const myContainer = myBox ? myBox.closest(".user") : null;
+      if (myContainer) {
+        myContainer.classList.remove("camera-active");
       }
 
       Object.values(peers).forEach(pc => {
@@ -602,16 +576,19 @@ const RoomManager = (() => {
           "myVideoBox"
         );
 
+      const myContainer = myBox ? myBox.closest(".user") : null;
+      if (myContainer) {
+        myContainer.classList.add("camera-active");
+      }
+
       const myVideo =
         document.getElementById(
           "myVideoElement"
         );
 
-      if (myBox && myVideo) {
+      if (myVideo) {
         myVideo.srcObject =
           localVideoStream;
-        myBox.style.display =
-          "block";
       }
 
       Object.entries(peers).forEach(
@@ -717,16 +694,11 @@ const RoomManager = (() => {
             "videoBox_" + userId
           );
 
-        if (!videoBox) {
-          videoBox =
-            document.getElementById(
-              "myVideoBox"
-            );
-        }
-
         if (videoBox) {
-          videoBox.style.display =
-            "block";
+          const container = videoBox.closest(".user");
+          if (container) {
+            container.classList.add("camera-active");
+          }
 
           let video =
             videoBox.querySelector(
