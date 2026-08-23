@@ -9,7 +9,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 30px;
+    gap: 20px;
     z-index: 1000;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
   }
@@ -18,26 +18,42 @@
     position: relative;
     display: flex;
     align-items: center;
+    background: #2b2d31;
+    border-radius: 50px;
+    padding: 4px;
   }
 
-  #muteBtn {
+  .control-btn {
     background: #2b2d31;
     color: #dbdee1;
     border: none;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    font-size: 22px;
+    border-radius: 50px;
+    height: 44px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0;
     transition: background 0.2s;
   }
 
-  #muteBtn:hover {
+  .control-btn:hover {
     background: #35373c;
+  }
+
+  #muteBtn {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-right: 10px;
+  }
+
+  #volumeBtn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding-left: 6px;
+    font-size: 12px;
   }
 
   .volume-popup {
@@ -67,22 +83,20 @@
     cursor: pointer;
   }
 
-  #volumeBtn {
+  .chat-btn {
     background: #2b2d31;
     color: #dbdee1;
     border: none;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    font-size: 22px;
+    border-radius: 50px;
+    height: 44px;
+    padding: 0 24px;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
+    transition: background 0.2s;
   }
 
-  #volumeBtn:hover {
+  .chat-btn:hover {
     background: #35373c;
   }
 
@@ -91,30 +105,125 @@
     color: white;
     border: none;
     border-radius: 50px;
-    padding: 14px 32px;
-    font-size: 16px;
+    padding: 0 28px;
+    height: 44px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    width: auto;
-    margin: 0;
     transition: opacity 0.2s;
   }
 
   .leave-btn:hover {
     opacity: 0.85;
   }
+
+  .chat-card {
+    position: fixed;
+    right: 20px;
+    bottom: 110px;
+    width: 350px;
+    height: 500px;
+    background: #1e1f22;
+    border-radius: 12px;
+    display: none;
+    flex-direction: column;
+    padding: 15px;
+    z-index: 2000;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid #35373c;
+  }
+
+  .chat-card.show {
+    display: flex;
+  }
+
+  .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #dbdee1;
+    font-weight: 600;
+    font-size: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #35373c;
+    margin-bottom: 10px;
+  }
+
+  .chat-close {
+    background: transparent;
+    color: #949ba4;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .chat-close:hover {
+    color: #dbdee1;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 5px;
+    margin-bottom: 10px;
+  }
+
+  .chat-message {
+    color: #dbdee1;
+    font-size: 13px;
+    word-break: break-all;
+    background: #2b2d31;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  .chat-input {
+    display: flex;
+    gap: 8px;
+  }
+
+  .chat-input input {
+    flex: 1;
+    background: #383a40;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #dbdee1;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .chat-input input::placeholder {
+    color: #949ba4;
+  }
+
+  .chat-input button {
+    background: #5865f2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .chat-input button:hover {
+    background: #4752c4;
+  }
 </style>
 
-
 <div class="call-card-container">
-
   <div class="volume-box">
-    <button
-      id="muteBtn"
-      onclick="RoomManager.toggleMute()"
-      title="ミュート切り替え"
-    >
-      🔊
+    <button id="muteBtn" class="control-btn" onclick="RoomManager.toggleMute()">
+      音声
+    </button>
+    <button id="volumeBtn" class="control-btn" onclick="toggleVolume()">
+      ▼
     </button>
 
     <div id="volumePopup" class="volume-popup">
@@ -132,34 +241,46 @@
     </div>
   </div>
 
-  <button
-    id="volumeBtn"
-    onclick="toggleVolume()"
-    title="音量設定"
-  >
-    🔽
+  <button class="chat-btn" onclick="toggleChat()">
+    チャット
   </button>
 
-  <button
-    class="leave-btn"
-    onclick="RoomManager.leaveRoom()"
-  >
+  <button class="leave-btn" onclick="RoomManager.leaveRoom()">
     退出
   </button>
+</div>
 
+<div id="chatCard" class="chat-card">
+  <div class="chat-header">
+    <span>チャット</span>
+    <button class="chat-close" onclick="toggleChat()">✕ 閉じる</button>
+  </div>
+  <div id="chatMessages" class="chat-messages"></div>
+  <div class="chat-input">
+    <input id="chatInput" placeholder="メッセージを送信" onkeydown="if(event.key==='Enter') sendChat()">
+    <button onclick="sendChat()">送信</button>
+  </div>
 </div>
 
 <script>
   function toggleVolume() {
-    const popup =
-      document.getElementById(
-        "volumePopup"
-      );
-
+    const popup = document.getElementById("volumePopup");
     if (popup) {
-      popup.classList.toggle(
-        "show"
-      );
+      popup.classList.toggle("show");
     }
+  }
+
+  function toggleChat() {
+    const chatCard = document.getElementById("chatCard");
+    if (chatCard) {
+      chatCard.classList.toggle("show");
+    }
+  }
+
+  function sendChat() {
+    const input = document.getElementById("chatInput");
+    if (!input) return;
+    RoomManager.sendMessage(input.value);
+    input.value = "";
   }
 </script>
