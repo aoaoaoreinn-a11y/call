@@ -366,10 +366,12 @@ const RoomManager = (() => {
   /*
    * 重複名回避
    */
-  function createUniqueName(name, users) {
+  function createUniqueName(name, users, myId) {
     let count = 1;
     let newName = name;
-    const names = Object.values(users).map(user => user.name);
+    const names = Object.entries(users)
+      .filter(([id]) => id !== myId)
+      .map(([id, user]) => user.name);
 
     while (names.includes(newName)) {
       count++;
@@ -753,7 +755,7 @@ const RoomManager = (() => {
 
     const users = usersSnap.val() || {};
 
-    const uniqueName = createUniqueName(name, users);
+    const uniqueName = createUniqueName(name, users, userId);
     const color = createUserColor(users);
 
     currentUserName = uniqueName;
