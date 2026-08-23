@@ -317,12 +317,17 @@ const RoomManager = (() => {
 
     if (id === currentUserId) {
       icon.id = "myUserIcon";
+      icon.style.setProperty("--user-color", user.color || "#5865f2");
     }
 
     icon.textContent =
       getInitial(
         user.name
       );
+
+    if (user.color) {
+      icon.style.background = user.color;
+    }
 
     const name =
       document.createElement(
@@ -355,6 +360,51 @@ const RoomManager = (() => {
     return Array.from(
       name.trim()
     )[0];
+  }
+
+
+  /*
+   * 重複名回避
+   */
+  function createUniqueName(name, users) {
+    let count = 1;
+    let newName = name;
+    const names = Object.values(users).map(user => user.name);
+
+    while (names.includes(newName)) {
+      count++;
+      newName = name + "-" + count;
+    }
+
+    return newName;
+  }
+
+
+  /*
+   * 重複しないカラー生成
+   */
+  function createUserColor(users) {
+    const colors = [
+      "#5865f2",
+      "#57f287",
+      "#fee75c",
+      "#eb459e",
+      "#ed4245",
+      "#9b59b6",
+      "#e67e22",
+      "#1abc9c",
+      "#3498db",
+      "#2ecc71"
+    ];
+
+    const used = Object.values(users).map(user => user.color);
+    const available = colors.filter(c => !used.includes(c));
+
+    if (available.length > 0) {
+      return available[Math.floor(Math.random() * available.length)];
+    }
+
+    return "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
   }
 
 
@@ -692,8 +742,35 @@ const RoomManager = (() => {
     currentUserId =
       userId;
 
-    currentUserName =
-      name;
+    const usersSnap = await get(
+      ref(
+        database,
+        "rooms/" +
+        roomId +
+        "/users"
+      )
+    );
+
+    const users = usersSnap.val() || {};
+
+    const uniqueName = createUniqueName(name, users);
+    const color = createUserColor(users);
+
+    currentUserName = uniqueName;
+
+    await set(
+      ref(
+        database,
+        "rooms/" +
+        roomId +
+        "/users/" +
+        userId
+      ),
+      {
+        name: uniqueName,
+        color: color
+      }
+    );
 
     const roomIdDisplay =
       document.getElementById(
