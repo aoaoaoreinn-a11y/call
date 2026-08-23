@@ -468,6 +468,7 @@ const RoomManager = (() => {
 
         audio.id = "audio_" + userId;
         audio.autoplay = true;
+        audio.playsInline = true;
         audio.volume = currentVolume;
 
         document.body.appendChild(audio);
@@ -475,6 +476,14 @@ const RoomManager = (() => {
       }
 
       audio.srcObject = e.streams[0];
+
+      audio.play()
+        .catch(err => {
+          console.log(
+            "自動再生がブロックされました:",
+            err
+          );
+        });
 
     };
 
