@@ -24,6 +24,10 @@ const RoomManager = (() => {
   let analyser = null;
   let audioContext = null;
 
+  let processedOffers = {};
+  let processedAnswers = {};
+  let creatingOffer = {};
+
 
   /*
    * Firebase Socket監視
@@ -371,6 +375,12 @@ const RoomManager = (() => {
    */
   async function makeOffer(target) {
 
+    if (creatingOffer[target]) {
+      return;
+    }
+
+    creatingOffer[target] = true;
+
     const pc =
       createPeer(target);
 
@@ -407,11 +417,26 @@ const RoomManager = (() => {
     offer
   ) {
 
+    const key = from;
+
+    if (processedOffers[key]) {
+      return;
+    }
+
+    processedOffers[key] = true;
+
     let pc = peers[from];
 
     if (!pc) {
       pc = createPeer(from);
       peers[from] = pc;
+    }
+
+    if (
+      pc.signalingState !== "stable" &&
+      pc.signalingState !== "have-local-offer"
+    ) {
+      return;
     }
 
     await pc.setRemoteDescription(
@@ -425,7 +450,7 @@ const RoomManager = (() => {
 
     await pc.setLocalDescription(answer);
 
-    set(
+    await set(
       ref(
         database,
         "rooms/" +
@@ -440,6 +465,19 @@ const RoomManager = (() => {
       }
     );
 
+    setTimeout(() => {
+      remove(
+        ref(
+          database,
+          "rooms/" +
+          currentRoomId +
+          "/signal/" +
+          currentUserId +
+          "/answer"
+        )
+      );
+    }, 3000);
+
   }
 
 
@@ -451,9 +489,20 @@ const RoomManager = (() => {
     answer
   ) {
 
+    const key = from;
+
+    if (processedAnswers[key]) {
+      return;
+    }
+
+    processedAnswers[key] = true;
+
     const pc = peers[from];
 
-    if (pc) {
+    if (
+      pc &&
+      pc.signalingState === "have-local-offer"
+    ) {
       await pc.setRemoteDescription(
         new RTCSessionDescription(
           answer
@@ -720,27 +769,3 @@ window.addEventListener("DOMContentLoaded", () => {
     );
   }
 });
-
-window.addEventListener(
-  "beforeunload",
-  () => {
-
-    if (
-      currentRoomId &&
-      currentUserId
-    ) {
-
-      remove(
-        ref(
-          database,
-          "rooms/" +
-          currentRoomId +
-          "/users/" +
-          currentUserId
-        )
-      );
-
-    }
-
-  }
-);
