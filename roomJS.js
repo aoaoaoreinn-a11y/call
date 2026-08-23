@@ -123,7 +123,7 @@ const RoomManager = (() => {
 
 
   /*
-   * メッセージ監視（一時チャット・受信後即削除）
+   * メッセージ監視（一時チャット・取得後即削除）
    */
   function watchMessages() {
 
@@ -178,6 +178,7 @@ const RoomManager = (() => {
 
           box.appendChild(wrapper);
 
+          // 表示後すぐ削除
           remove(
             ref(
               database,
@@ -757,7 +758,7 @@ const RoomManager = (() => {
 
 
   /*
-   * 一時チャット送信
+   * 会話送信（一時チャット用）
    */
   function pushData(message) {
 
