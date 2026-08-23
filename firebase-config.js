@@ -9,7 +9,7 @@ import {
 
 const firebaseConfig = {
   databaseURL:
-    "https://あなたのDB.firebaseio.com"
+    "https://mike-ebcae-default-rtdb.firebaseio.com/"
 };
 
 
