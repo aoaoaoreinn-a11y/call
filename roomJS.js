@@ -4,7 +4,8 @@ import {
   onDisconnect,
   remove,
   set,
-  push
+  push,
+  get
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 import {
@@ -121,7 +122,7 @@ const RoomManager = (() => {
 
 
   /*
-   * 退出処理・ルーム削除監視
+   * 退出処理・ルーム削除監視（onDisconnectで確実にルーム削除まで対応）
    */
   function setupDisconnect() {
 
@@ -134,17 +135,14 @@ const RoomManager = (() => {
         currentUserId
       );
 
-    onDisconnect(userRef)
-      .remove()
-      .then(() => {
+    const roomRef =
+      ref(
+        database,
+        "rooms/" +
+        currentRoomId
+      );
 
-        console.log(
-          "ユーザー退出監視登録完了"
-        );
-
-      });
-
-    const roomUsersRef =
+    const usersRef =
       ref(
         database,
         "rooms/" +
@@ -152,22 +150,20 @@ const RoomManager = (() => {
         "/users"
       );
 
-    onValue(roomUsersRef, snapshot => {
+    // 接続が切れたとき、もし自分が最後の1人であればルーム全体を削除し、そうでなければ自分だけを削除する
+    get(usersRef).then(snapshot => {
+      const users = snapshot.val() || {};
+      const userKeys = Object.keys(users);
 
-      const users = snapshot.val();
-
-      if (!users) {
-
-        remove(
-          ref(
-            database,
-            "rooms/" +
-            currentRoomId
-          )
-        );
-
+      if (userKeys.length <= 1) {
+        onDisconnect(roomRef).remove().then(() => {
+          console.log("ルーム切断時削除監視登録完了（最後の人）");
+        });
+      } else {
+        onDisconnect(userRef).remove().then(() => {
+          console.log("ユーザー退出監視登録完了");
+        });
       }
-
     });
   }
 
