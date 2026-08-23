@@ -1,14 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>WebRTC Call</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC Call</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>WebRTC Call</h1>
+  <div class="container">
+    <div class="card">
+      <h1>WebRTC Call</h1>
 
-<script src="room.js"></script>
+      <div class="description">
+        名前を入力して、部屋を作成または参加してください。
+      </div>
 
+      <label for="name">名前</label>
+      <input
+        id="name"
+        type="text"
+        placeholder="名前を入力"
+        maxlength="30"
+        autocomplete="off"
+      >
+
+      <div class="room-actions">
+        <div class="room-section">
+          <h2>部屋を作成</h2>
+          <p>新しい通話ルームを作成します。</p>
+          <button onclick="createRoom()">部屋を作成</button>
+        </div>
+
+        <div class="room-section">
+          <h2>部屋に参加</h2>
+          <input
+            id="roomId"
+            type="text"
+            placeholder="部屋IDを入力"
+            maxlength="100"
+            autocomplete="off"
+          >
+          <button onclick="joinRoom()">部屋に参加</button>
+        </div>
+      </div>
+
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
 </body>
 </html>
