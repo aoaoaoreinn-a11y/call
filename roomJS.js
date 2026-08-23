@@ -16,6 +16,7 @@ const RoomManager = (() => {
 
   let currentRoomId = null;
   let currentUserId = null;
+  let currentUserName = "";
   let isMuted = false;
   let currentVolume = 1;
 
@@ -122,45 +123,70 @@ const RoomManager = (() => {
 
 
   /*
-   * メッセージ監視
+   * メッセージ監視（一時チャット・受信後即削除）
    */
   function watchMessages() {
 
-    const messagesRef =
+    const chatRef =
       ref(
         database,
         "rooms/" +
         currentRoomId +
-        "/messages"
+        "/chat"
       );
 
-    onValue(messagesRef, snapshot => {
+    onValue(chatRef, snapshot => {
 
-      const messages =
-        snapshot.val() || {};
+      const data =
+        snapshot.val();
 
-      const box =
-        document.getElementById(
-          "panelMessages"
-        );
+      if (!data) return;
 
-      if (!box) return;
+      Object.entries(data)
+        .forEach(([key, msg]) => {
 
-      box.innerHTML = "";
+          const box =
+            document.getElementById(
+              "panelMessages"
+            );
 
-      Object.values(messages)
-        .forEach(msg => {
+          if (!box) return;
 
-          const div =
+          const wrapper =
             document.createElement("div");
 
-          div.className =
+          wrapper.className =
             "panel-message";
 
-          div.textContent =
+          const icon =
+            document.createElement("span");
+
+          icon.className =
+            "chat-icon";
+
+          icon.textContent =
+            getInitial(msg.name);
+
+          const text =
+            document.createElement("span");
+
+          text.textContent =
             msg.text;
 
-          box.appendChild(div);
+          wrapper.appendChild(icon);
+          wrapper.appendChild(text);
+
+          box.appendChild(wrapper);
+
+          remove(
+            ref(
+              database,
+              "rooms/" +
+              currentRoomId +
+              "/chat/" +
+              key
+            )
+          );
 
         });
 
@@ -665,6 +691,9 @@ const RoomManager = (() => {
     currentUserId =
       userId;
 
+    currentUserName =
+      name;
+
     const roomIdDisplay =
       document.getElementById(
         "roomIdDisplay"
@@ -728,7 +757,7 @@ const RoomManager = (() => {
 
 
   /*
-   * 会話送信
+   * 一時チャット送信
    */
   function pushData(message) {
 
@@ -736,19 +765,19 @@ const RoomManager = (() => {
       return;
     }
 
-    const messageRef =
+    push(
       ref(
         database,
         "rooms/" +
         currentRoomId +
-        "/messages"
-      );
-
-    push(messageRef, {
-      user: currentUserId,
-      text: message,
-      time: Date.now()
-    });
+        "/chat"
+      ),
+      {
+        user: currentUserId,
+        name: currentUserName,
+        text: message
+      }
+    );
 
   }
 
