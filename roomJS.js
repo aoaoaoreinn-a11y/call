@@ -48,7 +48,11 @@ const RoomManager = (() => {
         renderUsers(users);
 
         Object.keys(users).forEach(id => {
-          if (id !== currentUserId && !peers[id]) {
+          if (
+            id !== currentUserId &&
+            !peers[id] &&
+            currentUserId < id
+          ) {
             makeOffer(id);
           }
         });
@@ -620,7 +624,7 @@ const RoomManager = (() => {
     });
 
     if (!currentRoomId || !currentUserId) {
-      location.href = "index.html";
+      location.href = "https://aoaoaoreinn-a11y.github.io/call/index.html";
       return;
     }
 
@@ -663,13 +667,13 @@ const RoomManager = (() => {
           onlyOnce: true
         });
 
-        location.href = "index.html";
+        location.href = "https://aoaoaoreinn-a11y.github.io/call/index.html";
 
       })
       .catch(err => {
 
         console.error(err);
-        location.href = "index.html";
+        location.href = "https://aoaoaoreinn-a11y.github.io/call/index.html";
 
       });
 
@@ -716,3 +720,27 @@ window.addEventListener("DOMContentLoaded", () => {
     );
   }
 });
+
+window.addEventListener(
+  "beforeunload",
+  () => {
+
+    if (
+      currentRoomId &&
+      currentUserId
+    ) {
+
+      remove(
+        ref(
+          database,
+          "rooms/" +
+          currentRoomId +
+          "/users/" +
+          currentUserId
+        )
+      );
+
+    }
+
+  }
+);
