@@ -5,7 +5,8 @@ import {
   remove,
   set,
   push,
-  get
+  get,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 import {
@@ -197,7 +198,7 @@ const RoomManager = (() => {
 
 
   /*
-   * 退出処理・ルーム削除監視（onDisconnectで確実にルーム削除まで対応）
+   * 退出処理・ルーム削除監視（onDisconnectで確実に自ユーザー削除＆無人時ルーム削除）
    */
   function setupDisconnect() {
 
@@ -217,6 +218,12 @@ const RoomManager = (() => {
         currentRoomId
       );
 
+    onDisconnect(userRef)
+      .remove()
+      .then(() => {
+        console.log("ユーザー退出監視登録完了");
+      });
+
     const usersRef =
       ref(
         database,
@@ -225,20 +232,17 @@ const RoomManager = (() => {
         "/users"
       );
 
-    get(usersRef).then(snapshot => {
-      const users = snapshot.val() || {};
-      const userKeys = Object.keys(users);
+    onValue(
+      usersRef,
+      snapshot => {
+        const users =
+          snapshot.val();
 
-      if (userKeys.length <= 1) {
-        onDisconnect(roomRef).remove().then(() => {
-          console.log("ルーム切断時削除監視登録完了（最後の人）");
-        });
-      } else {
-        onDisconnect(userRef).remove().then(() => {
-          console.log("ユーザー退出監視登録完了");
-        });
+        if (!users) {
+          remove(roomRef);
+        }
       }
-    });
+    );
   }
 
 
@@ -360,25 +364,6 @@ const RoomManager = (() => {
     return Array.from(
       name.trim()
     )[0];
-  }
-
-
-  /*
-   * 重複名回避
-   */
-  function createUniqueName(name, users, myId) {
-    let count = 1;
-    let newName = name;
-    const names = Object.entries(users)
-      .filter(([id]) => id !== myId)
-      .map(([id, user]) => user.name);
-
-    while (names.includes(newName)) {
-      count++;
-      newName = name + "-" + count;
-    }
-
-    return newName;
   }
 
 
@@ -730,7 +715,7 @@ const RoomManager = (() => {
 
 
   /*
-   * ルーム入室
+   * ルーム入室（トランザクションによる同時入室の名前・色競合防止）
    */
   async function enter(
     roomId,
@@ -744,35 +729,50 @@ const RoomManager = (() => {
     currentUserId =
       userId;
 
-    const usersSnap = await get(
-      ref(
-        database,
-        "rooms/" +
-        roomId +
-        "/users"
-      )
+    const userRef = ref(
+      database,
+      "rooms/" +
+      roomId +
+      "/users/" +
+      userId
     );
 
+    const usersRef = ref(
+      database,
+      "rooms/" +
+      roomId +
+      "/users"
+    );
+
+    await runTransaction(userRef, (currentData) => {
+      if (currentData) {
+        return currentData;
+      }
+      return null;
+    });
+
+    const usersSnap = await get(usersRef);
     const users = usersSnap.val() || {};
 
-    const uniqueName = createUniqueName(name, users, userId);
+    let count = 1;
+    let uniqueName = name;
+    const otherUsers = Object.entries(users)
+      .filter(([id]) => id !== userId)
+      .map(([id, u]) => u.name);
+
+    while (otherUsers.includes(uniqueName)) {
+      count++;
+      uniqueName = name + "-" + count;
+    }
+
     const color = createUserColor(users);
 
     currentUserName = uniqueName;
 
-    await set(
-      ref(
-        database,
-        "rooms/" +
-        roomId +
-        "/users/" +
-        userId
-      ),
-      {
-        name: uniqueName,
-        color: color
-      }
-    );
+    await set(userRef, {
+      name: uniqueName,
+      color: color
+    });
 
     const roomIdDisplay =
       document.getElementById(
@@ -1004,23 +1004,6 @@ window.addEventListener("DOMContentLoaded", () => {
 window.addEventListener(
   "beforeunload",
   () => {
-
-    if (
-      currentRoomId &&
-      currentUserId
-    ) {
-
-      remove(
-        ref(
-          database,
-          "rooms/" +
-          currentRoomId +
-          "/users/" +
-          currentUserId
-        )
-      );
-
-    }
-
+    RoomManager.leaveRoom();
   }
 );
