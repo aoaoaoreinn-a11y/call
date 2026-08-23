@@ -122,6 +122,54 @@ const RoomManager = (() => {
 
 
   /*
+   * メッセージ監視
+   */
+  function watchMessages() {
+
+    const messagesRef =
+      ref(
+        database,
+        "rooms/" +
+        currentRoomId +
+        "/messages"
+      );
+
+    onValue(messagesRef, snapshot => {
+
+      const messages =
+        snapshot.val() || {};
+
+      const box =
+        document.getElementById(
+          "panelMessages"
+        );
+
+      if (!box) return;
+
+      box.innerHTML = "";
+
+      Object.values(messages)
+        .forEach(msg => {
+
+          const div =
+            document.createElement("div");
+
+          div.className =
+            "panel-message";
+
+          div.textContent =
+            msg.text;
+
+          box.appendChild(div);
+
+        });
+
+    });
+
+  }
+
+
+  /*
    * 退出処理・ルーム削除監視（onDisconnectで確実にルーム削除まで対応）
    */
   function setupDisconnect() {
@@ -150,7 +198,6 @@ const RoomManager = (() => {
         "/users"
       );
 
-    // 接続が切れたとき、もし自分が最後の1人であればルーム全体を削除し、そうでなければ自分だけを削除する
     get(usersRef).then(snapshot => {
       const users = snapshot.val() || {};
       const userKeys = Object.keys(users);
@@ -631,6 +678,7 @@ const RoomManager = (() => {
     await startWebRTC();
     watchUsers(roomId);
     watchSignal();
+    watchMessages();
     setupDisconnect();
   }
 
@@ -674,6 +722,32 @@ const RoomManager = (() => {
 
     Object.values(audioElements).forEach(audio => {
       audio.volume = currentVolume;
+    });
+
+  }
+
+
+  /*
+   * 会話送信
+   */
+  function pushData(message) {
+
+    if (!message || !message.trim()) {
+      return;
+    }
+
+    const messageRef =
+      ref(
+        database,
+        "rooms/" +
+        currentRoomId +
+        "/messages"
+      );
+
+    push(messageRef, {
+      user: currentUserId,
+      text: message,
+      time: Date.now()
     });
 
   }
@@ -762,7 +836,8 @@ const RoomManager = (() => {
     enter,
     toggleMute,
     changeVolume,
-    leaveRoom
+    leaveRoom,
+    pushData
 
   };
 
@@ -816,3 +891,27 @@ window.addEventListener("DOMContentLoaded", () => {
   );
 
 });
+
+window.addEventListener(
+  "beforeunload",
+  () => {
+
+    if (
+      currentRoomId &&
+      currentUserId
+    ) {
+
+      remove(
+        ref(
+          database,
+          "rooms/" +
+          currentRoomId +
+          "/users/" +
+          currentUserId
+        )
+      );
+
+    }
+
+  }
+);
