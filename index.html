@@ -3,52 +3,164 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>WebRTC Call</title>
-  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-  <div class="container">
-    <div class="card">
-      <h1>WebRTC Call</h1>
+  <div id="app">
+    <style>
+      * {
+        box-sizing: border-box;
+      }
 
-      <div class="description">
-        名前を入力して、部屋を作成または参加してください。
-      </div>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f5f7fb;
+        color: #222;
+      }
 
-      <label for="name">名前</label>
-      <input
-        id="name"
-        type="text"
-        placeholder="名前を入力"
-        maxlength="30"
-        autocomplete="off"
-      >
+      .container {
+        width: min(700px, calc(100% - 32px));
+        margin: 60px auto;
+      }
 
-      <div class="room-actions">
-        <div class="room-section">
-          <h2>部屋を作成</h2>
-          <p>新しい通話ルームを作成します。</p>
-          <button onclick="createRoom()">部屋を作成</button>
+      .card {
+        background: white;
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+      }
+
+      h1 {
+        margin-top: 0;
+        margin-bottom: 8px;
+      }
+
+      .description {
+        color: #666;
+        margin-bottom: 28px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #d5d9e0;
+        border-radius: 10px;
+        font-size: 16px;
+        outline: none;
+      }
+
+      input:focus {
+        border-color: #667eea;
+      }
+
+      .room-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .room-section {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 20px;
+      }
+
+      .room-section h2 {
+        margin-top: 0;
+        font-size: 19px;
+      }
+
+      button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 13px;
+        border: 0;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        background: #667eea;
+        color: white;
+      }
+
+      button:hover {
+        opacity: 0.9;
+      }
+
+      .room-section input {
+        margin-top: 4px;
+      }
+
+      #status {
+        margin-top: 20px;
+        padding: 12px;
+        border-radius: 10px;
+        background: #f0f2f5;
+        color: #555;
+        display: none;
+      }
+
+      @media (max-width: 600px) {
+        .room-actions {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+
+    <div class="container">
+      <div class="card">
+        <h1>WebRTC Call</h1>
+
+        <div class="description">
+          名前を入力して、部屋を作成または参加してください。
         </div>
 
-        <div class="room-section">
-          <h2>部屋に参加</h2>
-          <input
-            id="roomId"
-            type="text"
-            placeholder="部屋IDを入力"
-            maxlength="100"
-            autocomplete="off"
-          >
-          <button onclick="joinRoom()">部屋に参加</button>
-        </div>
-      </div>
+        <label for="name">名前</label>
+        <input
+          id="name"
+          type="text"
+          placeholder="名前を入力"
+          maxlength="30"
+          autocomplete="off"
+        >
 
-      <div id="status"></div>
+        <div class="room-actions">
+          <div class="room-section">
+            <h2>部屋を作成</h2>
+            <p>新しい通話ルームを作成します。</p>
+            <button onclick="createRoom()">部屋を作成</button>
+          </div>
+
+          <div class="room-section">
+            <h2>部屋に参加</h2>
+            <input
+              id="roomId"
+              type="text"
+              placeholder="部屋IDを入力"
+              maxlength="100"
+              autocomplete="off"
+            >
+            <button onclick="joinRoom()">部屋に参加</button>
+          </div>
+        </div>
+
+        <div id="status"></div>
+      </div>
     </div>
   </div>
 
   <script type="module" src="main.js"></script>
+
 </body>
 </html>
