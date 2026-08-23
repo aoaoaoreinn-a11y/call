@@ -673,6 +673,7 @@ const RoomManager = (() => {
     });
 
     if (!currentRoomId || !currentUserId) {
+      sessionStorage.removeItem("callroom_reload_" + currentUserId);
       location.href = "https://aoaoaoreinn-a11y.github.io/call/index.html";
       return;
     }
@@ -716,12 +717,14 @@ const RoomManager = (() => {
           onlyOnce: true
         });
 
+        sessionStorage.removeItem("callroom_reload_" + currentUserId);
         location.href = "https://aoaoaoreinn-a11y.github.io/call/index.html";
 
       })
       .catch(err => {
 
         console.error(err);
+        sessionStorage.removeItem("callroom_reload_" + currentUserId);
         location.href = "https://aoaoaoreinn-a11y.github.io/call/index.html";
 
       });
@@ -747,6 +750,7 @@ window.RoomManager =
   RoomManager;
 
 window.addEventListener("DOMContentLoaded", () => {
+
   const params =
     new URLSearchParams(
       location.search
@@ -761,11 +765,56 @@ window.addEventListener("DOMContentLoaded", () => {
   const name =
     params.get("name");
 
-  if (room && user && name) {
-    RoomManager.enter(
-      room,
-      user,
-      name
-    );
+  if (!room || !user || !name) {
+    return;
   }
+
+  const reloadKey =
+    "callroom_reload_" + user;
+
+  if (sessionStorage.getItem(reloadKey)) {
+
+    sessionStorage.removeItem(reloadKey);
+
+    location.href =
+      "https://aoaoaoreinn-a11y.github.io/call/index.html";
+
+    return;
+  }
+
+  sessionStorage.setItem(
+    reloadKey,
+    "1"
+  );
+
+  RoomManager.enter(
+    room,
+    user,
+    name
+  );
+
 });
+
+window.addEventListener(
+  "beforeunload",
+  () => {
+
+    if (
+      currentRoomId &&
+      currentUserId
+    ) {
+
+      remove(
+        ref(
+          database,
+          "rooms/" +
+          currentRoomId +
+          "/users/" +
+          currentUserId
+        )
+      );
+
+    }
+
+  }
+);
