@@ -83,7 +83,7 @@
     cursor: pointer;
   }
 
-  .chat-btn {
+  .panel-btn {
     background: #2b2d31;
     color: #dbdee1;
     border: none;
@@ -96,7 +96,7 @@
     transition: background 0.2s;
   }
 
-  .chat-btn:hover {
+  .panel-btn:hover {
     background: #35373c;
   }
 
@@ -117,7 +117,7 @@
     opacity: 0.85;
   }
 
-  .chat-card {
+  .panel-card {
     position: fixed;
     right: 20px;
     bottom: 110px;
@@ -133,11 +133,11 @@
     border: 1px solid #35373c;
   }
 
-  .chat-card.show {
+  .panel-card.show {
     display: flex;
   }
 
-  .chat-header {
+  .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -149,7 +149,7 @@
     margin-bottom: 10px;
   }
 
-  .chat-close {
+  .panel-close {
     background: transparent;
     color: #949ba4;
     border: none;
@@ -157,11 +157,11 @@
     font-size: 14px;
   }
 
-  .chat-close:hover {
+  .panel-close:hover {
     color: #dbdee1;
   }
 
-  .chat-messages {
+  .panel-messages {
     flex: 1;
     overflow-y: auto;
     display: flex;
@@ -171,7 +171,7 @@
     margin-bottom: 10px;
   }
 
-  .chat-message {
+  .panel-message {
     color: #dbdee1;
     font-size: 13px;
     word-break: break-all;
@@ -180,12 +180,12 @@
     border-radius: 8px;
   }
 
-  .chat-input {
+  .panel-input {
     display: flex;
     gap: 8px;
   }
 
-  .chat-input input {
+  .panel-input input {
     flex: 1;
     background: #383a40;
     border: none;
@@ -196,11 +196,11 @@
     outline: none;
   }
 
-  .chat-input input::placeholder {
+  .panel-input input::placeholder {
     color: #949ba4;
   }
 
-  .chat-input button {
+  .panel-input button {
     background: #5865f2;
     color: white;
     border: none;
@@ -212,7 +212,7 @@
     transition: background 0.2s;
   }
 
-  .chat-input button:hover {
+  .panel-input button:hover {
     background: #4752c4;
   }
 </style>
@@ -241,8 +241,8 @@
     </div>
   </div>
 
-  <button class="chat-btn" onclick="toggleChat()">
-    チャット
+  <button class="panel-btn" onclick="togglePanel()">
+    会話
   </button>
 
   <button class="leave-btn" onclick="RoomManager.leaveRoom()">
@@ -250,15 +250,15 @@
   </button>
 </div>
 
-<div id="chatCard" class="chat-card">
-  <div class="chat-header">
-    <span>チャット</span>
-    <button class="chat-close" onclick="toggleChat()">✕ 閉じる</button>
+<div id="panelCard" class="panel-card">
+  <div class="panel-header">
+    <span>会話</span>
+    <button class="panel-close" onclick="togglePanel()">✕ 閉じる</button>
   </div>
-  <div id="chatMessages" class="chat-messages"></div>
-  <div class="chat-input">
-    <input id="chatInput" placeholder="メッセージを送信" onkeydown="if(event.key==='Enter') sendChat()">
-    <button onclick="sendChat()">送信</button>
+  <div id="panelMessages" class="panel-messages"></div>
+  <div class="panel-input">
+    <input id="panelInput" placeholder="入力" onkeydown="if(event.key==='Enter') pushData()">
+    <button onclick="pushData()">OK</button>
   </div>
 </div>
 
@@ -270,18 +270,17 @@
     }
   }
 
-  function toggleChat() {
-    const chatCard = document.getElementById("chatCard");
-    if (chatCard) {
-      chatCard.classList.toggle("show");
+  function togglePanel() {
+    const panelCard = document.getElementById("panelCard");
+    if (panelCard) {
+      panelCard.classList.toggle("show");
     }
   }
 
-  function sendChat() {
-    const input = document.getElementById("chatInput");
+  function pushData() {
+    const input = document.getElementById("panelInput");
     if (!input) return;
-    RoomManager.sendMessage(input.value);
+    RoomManager.pushData(input.value);
     input.value = "";
   }
 </script>
-
