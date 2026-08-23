@@ -18,12 +18,16 @@ const RoomManager = (() => {
   let currentRoomId = null;
   let currentUserId = null;
   let currentUserName = "";
+  let currentUserColor = "#5865f2";
   let isMuted = false;
   let currentVolume = 1;
 
   let localStream = null;
+  let localVideoStream = null;
+  let cameraEnabled = false;
   let peers = {};
   let audioElements = {};
+  let videoElements = {};
   let analyser = null;
   let audioContext = null;
 
@@ -168,16 +172,57 @@ const RoomManager = (() => {
           icon.textContent =
             getInitial(msg.name);
 
+          icon.style.background =
+            msg.color || "#5865f2";
+
+          const body =
+            document.createElement("div");
+
+          body.className =
+            "message-body";
+
+          const username =
+            document.createElement("div");
+
+          username.className =
+            "message-name";
+
+          username.textContent =
+            msg.name;
+
           const text =
-            document.createElement("span");
+            document.createElement("div");
+
+          text.className =
+            "message-text";
 
           text.textContent =
             msg.text;
 
+          body.appendChild(username);
+          body.appendChild(text);
+
           wrapper.appendChild(icon);
-          wrapper.appendChild(text);
+          wrapper.appendChild(body);
 
           box.appendChild(wrapper);
+
+          box.scrollTop =
+            box.scrollHeight;
+
+          const panelCard =
+            document.getElementById(
+              "panelCard"
+            );
+
+          const badge =
+            document.getElementById(
+              "chatBadge"
+            );
+
+          if (panelCard && badge && !panelCard.classList.contains("show")) {
+            badge.style.display = "inline-block";
+          }
 
           // 表示後すぐ削除
           remove(
@@ -346,6 +391,62 @@ const RoomManager = (() => {
 
     container.appendChild(icon);
 
+    if (id === currentUserId) {
+      const myVideoBox =
+        document.createElement(
+          "div"
+        );
+
+      myVideoBox.id =
+        "myVideoBox";
+
+      myVideoBox.className =
+        "video-box";
+
+      if (!cameraEnabled) {
+        myVideoBox.style.display =
+          "none";
+      }
+
+      const myVideo =
+        document.createElement(
+          "video"
+        );
+
+      myVideo.id =
+        "myVideoElement";
+
+      myVideo.autoplay = true;
+      myVideo.playsInline = true;
+      myVideo.muted = true;
+
+      if (localVideoStream) {
+        myVideo.srcObject =
+          localVideoStream;
+      }
+
+      myVideoBox.appendChild(myVideo);
+      container.appendChild(myVideoBox);
+    } else {
+      const remoteVideoBox =
+        document.createElement(
+          "div"
+        );
+
+      remoteVideoBox.id =
+        "videoBox_" + id;
+
+      remoteVideoBox.className =
+        "video-box";
+
+      remoteVideoBox.style.display =
+        "none";
+
+      container.appendChild(
+        remoteVideoBox
+      );
+    }
+
     container.appendChild(name);
 
     return container;
@@ -430,6 +531,113 @@ const RoomManager = (() => {
 
 
   /*
+   * カメラ切り替え
+   */
+  async function toggleCamera() {
+    const cameraBtn =
+      document.getElementById(
+        "cameraBtn"
+      );
+
+    if (cameraEnabled) {
+      if (localVideoStream) {
+        localVideoStream
+          .getTracks()
+          .forEach(t => t.stop());
+      }
+      localVideoStream = null;
+      cameraEnabled = false;
+
+      if (cameraBtn) {
+        cameraBtn.textContent =
+          "カメラ";
+        cameraBtn.style.background =
+          "#2b2d31";
+      }
+
+      const myBox =
+        document.getElementById(
+          "myVideoBox"
+        );
+
+      if (myBox) {
+        myBox.style.display =
+          "none";
+      }
+
+      Object.values(peers).forEach(pc => {
+        const senders =
+          pc.getSenders();
+        senders.forEach(sender => {
+          if (
+            sender.track &&
+            sender.track.kind ===
+            "video"
+          ) {
+            pc.removeTrack(sender);
+          }
+        });
+      });
+
+      return;
+    }
+
+    try {
+      localVideoStream =
+        await navigator.mediaDevices.getUserMedia({
+          video: true
+        });
+
+      cameraEnabled = true;
+
+      if (cameraBtn) {
+        cameraBtn.textContent =
+          "カメラOFF";
+        cameraBtn.style.background =
+          "#da373c";
+      }
+
+      const myBox =
+        document.getElementById(
+          "myVideoBox"
+        );
+
+      const myVideo =
+        document.getElementById(
+          "myVideoElement"
+        );
+
+      if (myBox && myVideo) {
+        myVideo.srcObject =
+          localVideoStream;
+        myBox.style.display =
+          "block";
+      }
+
+      Object.entries(peers).forEach(
+        ([targetId, pc]) => {
+          localVideoStream
+            .getTracks()
+            .forEach(track => {
+              pc.addTrack(
+                track,
+                localVideoStream
+              );
+            });
+          makeOffer(targetId);
+        }
+      );
+
+    } catch (err) {
+      console.error(
+        "カメラの取得に失敗しました:",
+        err
+      );
+    }
+  }
+
+
+  /*
    * PeerConnection作成
    */
   function createPeer(userId) {
@@ -455,35 +663,92 @@ const RoomManager = (() => {
         });
     }
 
-    pc.ontrack = e => {
-
-      let audio =
-        document.getElementById(
-          "audio_" + userId
-        );
-
-      if (!audio) {
-        audio =
-          document.createElement("audio");
-
-        audio.id = "audio_" + userId;
-        audio.autoplay = true;
-        audio.playsInline = true;
-        audio.volume = currentVolume;
-
-        document.body.appendChild(audio);
-        audioElements[userId] = audio;
-      }
-
-      audio.srcObject = e.streams[0];
-
-      audio.play()
-        .catch(err => {
-          console.log(
-            "自動再生がブロックされました:",
-            err
+    if (localVideoStream && cameraEnabled) {
+      localVideoStream
+        .getTracks()
+        .forEach(track => {
+          pc.addTrack(
+            track,
+            localVideoStream
           );
         });
+    }
+
+    pc.ontrack = e => {
+
+      const stream = e.streams[0];
+
+      if (e.track.kind === "audio") {
+        let audio =
+          document.getElementById(
+            "audio_" + userId
+          );
+
+        if (!audio) {
+          audio =
+            document.createElement("audio");
+
+          audio.id = "audio_" + userId;
+          audio.autoplay = true;
+          audio.playsInline = true;
+          audio.volume = currentVolume;
+
+          document.body.appendChild(
+            audio
+          );
+          audioElements[userId] =
+            audio;
+        }
+
+        audio.srcObject = stream;
+
+        audio.play()
+          .catch(err => {
+            console.log(
+              "音声自動再生がブロックされました:",
+              err
+            );
+          });
+      }
+
+      if (e.track.kind === "video") {
+        let videoBox =
+          document.getElementById(
+            "videoBox_" + userId
+          );
+
+        if (!videoBox) {
+          videoBox =
+            document.getElementById(
+              "myVideoBox"
+            );
+        }
+
+        if (videoBox) {
+          videoBox.style.display =
+            "block";
+
+          let video =
+            videoBox.querySelector(
+              "video"
+            );
+
+          if (!video) {
+            video =
+              document.createElement(
+                "video"
+              );
+
+            video.autoplay = true;
+            video.playsInline = true;
+            videoBox.appendChild(
+              video
+            );
+          }
+
+          video.srcObject = stream;
+        }
+      }
 
     };
 
@@ -777,6 +1042,7 @@ const RoomManager = (() => {
     const color = createUserColor(users);
 
     currentUserName = uniqueName;
+    currentUserColor = color;
 
     await set(userRef, {
       name: uniqueName,
@@ -864,6 +1130,7 @@ const RoomManager = (() => {
       {
         user: currentUserId,
         name: currentUserName,
+        color: currentUserColor,
         text: message
       }
     );
@@ -878,6 +1145,12 @@ const RoomManager = (() => {
 
     if (localStream) {
       localStream.getTracks().forEach(track => {
+        track.stop();
+      });
+    }
+
+    if (localVideoStream) {
+      localVideoStream.getTracks().forEach(track => {
         track.stop();
       });
     }
@@ -955,7 +1228,8 @@ const RoomManager = (() => {
     toggleMute,
     changeVolume,
     leaveRoom,
-    pushData
+    pushData,
+    toggleCamera
 
   };
 
