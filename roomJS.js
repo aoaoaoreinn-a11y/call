@@ -121,7 +121,7 @@ const RoomManager = (() => {
 
 
   /*
-   * 退出処理
+   * 退出処理・ルーム削除監視
    */
   function setupDisconnect() {
 
@@ -143,6 +143,32 @@ const RoomManager = (() => {
         );
 
       });
+
+    const roomUsersRef =
+      ref(
+        database,
+        "rooms/" +
+        currentRoomId +
+        "/users"
+      );
+
+    onValue(roomUsersRef, snapshot => {
+
+      const users = snapshot.val();
+
+      if (!users) {
+
+        remove(
+          ref(
+            database,
+            "rooms/" +
+            currentRoomId
+          )
+        );
+
+      }
+
+    });
   }
 
 
@@ -794,27 +820,3 @@ window.addEventListener("DOMContentLoaded", () => {
   );
 
 });
-
-window.addEventListener(
-  "beforeunload",
-  () => {
-
-    if (
-      currentRoomId &&
-      currentUserId
-    ) {
-
-      remove(
-        ref(
-          database,
-          "rooms/" +
-          currentRoomId +
-          "/users/" +
-          currentUserId
-        )
-      );
-
-    }
-
-  }
-);
